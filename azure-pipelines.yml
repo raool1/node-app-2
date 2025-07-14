@@ -1,0 +1,59 @@
+
+---
+
+## 5. 🛠️ `azure-pipelines.yml`
+
+This file controls the CI/CD pipeline (build + deploy). Full working example is here again for clarity:
+
+```yaml
+trigger:
+- main
+
+pool:
+  name: Default  # Replace with your actual self-hosted agent pool
+
+variables:
+  artifactName: 'nodeapp-artifact'
+  buildDir: '$(Build.ArtifactStagingDirectory)/app'
+
+steps:
+- task: UseNode@1
+  inputs:
+    version: '18.x'
+  displayName: 'Use Node.js 18'
+
+- script: |
+    npm install
+  displayName: '📦 Install dependencies'
+
+- script: |
+    npm run build
+  displayName: '🏗️ Build the app'
+
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: '**'
+    TargetFolder: '$(buildDir)'
+  displayName: '📁 Copy files to staging'
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: '$(artifactName)'
+    publishLocation: 'Container'
+  displayName: '📦 Publish artifact'
+
+- script: |
+    sudo npm install -g pm2
+
+    rm -rf ~/node-deploy && mkdir ~/node-deploy
+    cp -r $(buildDir)/* ~/node-deploy
+
+    cd ~/node-deploy
+    npm install
+
+    pm2 delete my-node-app || true
+    pm2 start index.js --name my-node-app
+    pm2 save
+  displayName: '🚀 Deploy using PM2'

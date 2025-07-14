@@ -1,0 +1,14 @@
+{
+  "name": "my-node-app",
+  "version": "1.0.0",
+  "description": "Node app with multiple routes and Azure DevOps pipeline",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "build": "echo '✔️ No build needed for plain JS app'"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "license": "MIT"
+}
