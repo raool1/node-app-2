@@ -1,47 +1,40 @@
 trigger:
-- master
+- master  # or main, based on your repo
 
 pool:
-  name: Default  # Use your self-hosted agent pool name
+  name: Default  # Your self-hosted agent pool
 
 variables:
-  deployDir: '/home/azureuser/node-deploy'
+  appName: 'my-node-app'
 
 steps:
-# 1️⃣ Use Node.js
+# 1️⃣ Use Node.js 18
 - task: UseNode@1
   inputs:
     version: '18.x'
-  displayName: '🔧 Use Node.js 18'
+  displayName: 'Use Node.js 18'
 
-# 2️⃣ Install Dependencies
+# 2️⃣ Install dependencies
 - script: |
+    cd $(Build.SourcesDirectory)
     npm install
   displayName: '📦 Install dependencies'
 
-# 3️⃣ (Optional) Build
+# 3️⃣ (Optional) Build (skip if not needed)
 - script: |
-    npm run build || echo "No build script found"
-  displayName: '🏗️ Build (optional)'
+    cd $(Build.SourcesDirectory)
+    npm run build || echo "No build step"
+  displayName: '🏗️ Build the app (optional)'
 
-# 4️⃣ Deploy to Server Folder & Start with PM2
+# 4️⃣ Start app with PM2 from working directory
 - script: |
-    echo "🚀 Installing PM2 globally..."
+    echo "🚀 Starting app with PM2..."
+
     sudo npm install -g pm2
 
-    echo "📁 Cleaning previous deploy dir and copying new files..."
-    rm -rf $(deployDir) && mkdir -p $(deployDir)
-    cp -r $(Build.SourcesDirectory)/* $(deployDir)
+    cd $(Build.SourcesDirectory)
 
-    echo "📂 Contents of deployment directory:"
-    ls -la $(deployDir)
-
-    echo "📦 Installing dependencies on server..."
-    cd $(deployDir)
-    npm install
-
-    echo "🚀 Starting app with PM2..."
-    pm2 delete my-node-app || true
-    pm2 start index.js --name my-node-app
+    pm2 delete $(appName) || true
+    pm2 start index.js --name $(appName) --watch
     pm2 save
-  displayName: '🚀 Deploy & Start with PM2'
+  displayName: '🚀 Deploy & Start Node App with PM2'
