@@ -15,6 +15,6 @@ app.use('/contact', contactRoute);
 app.use('/api', apiRoute);
 
 // Start the server
-app.listen(port, () => {
-  console.log(`🚀 Server is running at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`🚀 Server is running at http://0.0.0.0:${port}`);
 });
