@@ -7,7 +7,7 @@ This file controls the CI/CD pipeline (build + deploy). Full working example is 
 
 ```yaml
 trigger:
-- main
+- master
 
 pool:
   name: Default  # Replace with your actual self-hosted agent pool
