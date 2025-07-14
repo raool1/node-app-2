@@ -1,51 +1,52 @@
 trigger:
-- master  # ✅ Make sure this matches your actual branch name
+- master
 
 pool:
-  name: Default  # ✅ This should match the name of your self-hosted agent pool
+  name: Default  # Your self-hosted agent pool name
 
 variables:
   artifactName: 'nodeapp-artifact'
   buildDir: '$(Build.ArtifactStagingDirectory)/app'
 
 steps:
-
-# ✅ Use Node.js 18
+# 1️⃣ Use Node.js 18
 - task: UseNode@1
   inputs:
     version: '18.x'
   displayName: 'Use Node.js 18'
 
-# ✅ Install dependencies
+# 2️⃣ Install Dependencies
 - script: |
     npm install
   displayName: '📦 Install dependencies'
 
-# ✅ Build the app (if you have a build step)
+# 3️⃣ (Optional) Build
 - script: |
-    npm run build
+    npm run build || echo "No build step"
   displayName: '🏗️ Build the app'
 
-# ✅ Copy files to staging directory
+# 4️⃣ Copy files to staging
 - task: CopyFiles@2
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)'
     Contents: '**'
     TargetFolder: '$(buildDir)'
-  displayName: '📁 Copy files to staging'
+  displayName: '📁 Copy to staging dir'
 
-# ✅ Publish artifacts
+# 5️⃣ Publish Artifacts
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: '$(artifactName)'
     publishLocation: 'Container'
-  displayName: '📦 Publish artifact'
+  displayName: '📦 Publish Artifact'
 
-# ✅ Deploy using PM2
+# 6️⃣ Deploy using PM2
 - script: |
+    echo "📦 Installing PM2..."
     sudo npm install -g pm2
 
+    echo "🚀 Deploying app..."
     rm -rf ~/node-deploy && mkdir ~/node-deploy
     cp -r $(buildDir)/* ~/node-deploy
 
@@ -53,6 +54,6 @@ steps:
     npm install
 
     pm2 delete my-node-app || true
-    pm2 start index.js --name my-node-app
+    pm2 start index.js --name my-node-app --watch
     pm2 save
-  displayName: '🚀 Deploy using PM2'
+  displayName: '🚀 Deploy & Start with PM2'
