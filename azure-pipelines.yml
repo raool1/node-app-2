@@ -56,4 +56,4 @@ steps:
     pm2 delete my-node-app || true
     pm2 start index.js --name my-node-app
     pm2 save
-  displayNam: '🚀 Deploy using PM2'
+  displayName: '🚀 Deploy using PM2'
