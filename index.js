@@ -1,20 +1,13 @@
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
-// Import route modules
-const homeRoute = require('./routes/home');
-const aboutRoute = require('./routes/about');
-const contactRoute = require('./routes/contact');
-const apiRoute = require('./routes/api');
+// Routes
+app.use('/', require('./routes/home'));
+app.use('/about', require('./routes/about'));
+app.use('/contact', require('./routes/contact'));
+app.use('/api', require('./routes/api'));
 
-// Use routes
-app.use('/', homeRoute);
-app.use('/about', aboutRoute);
-app.use('/contact', contactRoute);
-app.use('/api', apiRoute);
-
-// Start the server
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Server is running at http://0.0.0.0:${port}`);
+app.listen(PORT, () => {
+  console.log(`🚀 Server is running on http://localhost:${PORT}`);
 });
