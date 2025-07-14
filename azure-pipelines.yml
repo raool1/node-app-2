@@ -2,68 +2,73 @@ trigger:
 - master
 
 pool:
-  name: Default  # Your self-hosted agent pool name
+  name: Default  # Self-hosted agent name
 
 variables:
   artifactName: 'nodeapp-artifact'
-  buildDir: '$(Build.ArtifactStagingDirectory)'
+  buildDir: '$(Build.ArtifactStagingDirectory)/node-app-2'
 
 steps:
-# 1️⃣ Use Node.js 18
+# 1️⃣ Use Node.js
 - task: UseNode@1
   inputs:
     version: '18.x'
   displayName: 'Use Node.js 18'
 
-# 2️⃣ Install Dependencies
+# 2️⃣ Install dependencies
 - script: |
     npm install
   displayName: '📦 Install dependencies'
 
-# 3️⃣ Optional Build (only runs if build script exists)
+# 3️⃣ Optional build step
 - script: |
-    npm run build || echo "No build script found"
-  displayName: '🏗️ Build the app'
+    npm run build || echo "No build step"
+  displayName: '🏗️ Build app'
 
-# 4️⃣ Copy Files to Staging Directory
+# 4️⃣ Copy files to staging
 - task: CopyFiles@2
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)'
     Contents: '**'
     TargetFolder: '$(buildDir)'
-  displayName: '📁 Copy project files to staging dir'
+  displayName: '📁 Copy to staging dir'
 
-# 5️⃣ Publish Artifacts (optional if using release pipeline)
+# 5️⃣ Publish build artifact
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
     ArtifactName: '$(artifactName)'
     publishLocation: 'Container'
-  displayName: '📦 Publish Artifact'
+  displayName: '📦 Publish artifact'
 
-# 6️⃣ Deploy using PM2
+# -----------------------------
+# ⬇️ DEPLOYMENT SECTION (on self-hosted agent)
+# -----------------------------
+
+# 6️⃣ Download the artifact
+- task: DownloadBuildArtifacts@0
+  inputs:
+    buildType: 'current'
+    downloadType: 'single'
+    artifactName: '$(artifactName)'
+    downloadPath: '$(System.DefaultWorkingDirectory)/downloaded'
+
+# 7️⃣ Deploy with PM2
 - script: |
-    echo "📦 Installing PM2..."
+    echo "✅ Installing PM2..."
     sudo npm install -g pm2
 
-    echo "🚀 Copying files to deployment directory..."
+    echo "📂 Copying to ~/node-deploy..."
     rm -rf ~/node-deploy && mkdir ~/node-deploy
-    cp -r $(buildDir)/* ~/node-deploy
+    cp -r $(System.DefaultWorkingDirectory)/downloaded/$(artifactName)/node-app-2/* ~/node-deploy
 
-    echo "📂 Listing deployed files:"
+    echo "📁 Contents of ~/node-deploy:"
     ls -la ~/node-deploy
-
-    echo "🔍 Checking for index.js..."
-    if [ ! -f ~/node-deploy/index.js ]; then
-      echo "❌ index.js not found in ~/node-deploy"
-      exit 1
-    fi
 
     cd ~/node-deploy
     npm install
 
-    echo "🚀 Starting app with PM2..."
-    pm2 delete my-node-app || true
-    pm2 start index.js --name my-node-app --watch
+    pm2 delete node-app-2 || true
+    pm2 start index.js --name node-app-2
     pm2 save
-  displayName: '🚀 Deploy & Start Node App with PM2'
+  displayName: '🚀 Deploy node-app-2 with PM2'
