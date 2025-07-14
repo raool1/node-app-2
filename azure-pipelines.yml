@@ -6,7 +6,7 @@ pool:
 
 variables:
   artifactName: 'nodeapp-artifact'
-  buildDir: '$(Build.ArtifactStagingDirectory)/app'
+  buildDir: '$(Build.ArtifactStagingDirectory)'
 
 steps:
 # 1️⃣ Use Node.js 18
@@ -20,20 +20,20 @@ steps:
     npm install
   displayName: '📦 Install dependencies'
 
-# 3️⃣ (Optional) Build
+# 3️⃣ Optional Build (only runs if build script exists)
 - script: |
-    npm run build || echo "No build step"
+    npm run build || echo "No build script found"
   displayName: '🏗️ Build the app'
 
-# 4️⃣ Copy files to staging
+# 4️⃣ Copy Files to Staging Directory
 - task: CopyFiles@2
   inputs:
     SourceFolder: '$(Build.SourcesDirectory)'
     Contents: '**'
     TargetFolder: '$(buildDir)'
-  displayName: '📁 Copy to staging dir'
+  displayName: '📁 Copy project files to staging dir'
 
-# 5️⃣ Publish Artifacts
+# 5️⃣ Publish Artifacts (optional if using release pipeline)
 - task: PublishBuildArtifacts@1
   inputs:
     PathtoPublish: '$(Build.ArtifactStagingDirectory)'
@@ -46,14 +46,24 @@ steps:
     echo "📦 Installing PM2..."
     sudo npm install -g pm2
 
-    echo "🚀 Deploying app..."
+    echo "🚀 Copying files to deployment directory..."
     rm -rf ~/node-deploy && mkdir ~/node-deploy
     cp -r $(buildDir)/* ~/node-deploy
+
+    echo "📂 Listing deployed files:"
+    ls -la ~/node-deploy
+
+    echo "🔍 Checking for index.js..."
+    if [ ! -f ~/node-deploy/index.js ]; then
+      echo "❌ index.js not found in ~/node-deploy"
+      exit 1
+    fi
 
     cd ~/node-deploy
     npm install
 
+    echo "🚀 Starting app with PM2..."
     pm2 delete my-node-app || true
     pm2 start index.js --name my-node-app --watch
     pm2 save
-  displayName: '🚀 Deploy & Start with PM2'
+  displayName: '🚀 Deploy & Start Node App with PM2'
