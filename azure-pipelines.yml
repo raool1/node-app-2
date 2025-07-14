@@ -1,11 +1,12 @@
 trigger:
-- master  # or main, based on your repo
+- master  # Change to 'main' if that's your default branch
 
 pool:
-  name: Default  # Your self-hosted agent pool
+  name: Default  # Make sure this matches your self-hosted agent pool name
 
 variables:
   appName: 'my-node-app'
+  deployPath: '/home/azureuser/node-app'
 
 steps:
 # 1️⃣ Use Node.js 18
@@ -14,25 +15,30 @@ steps:
     version: '18.x'
   displayName: 'Use Node.js 18'
 
-# 2️⃣ Install dependencies
+# 2️⃣ Install dependencies in the pipeline source directory
 - script: |
     cd $(Build.SourcesDirectory)
     npm install
   displayName: '📦 Install dependencies'
 
-# 3️⃣ (Optional) Build (skip if not needed)
+# 3️⃣ Optional build step
 - script: |
     cd $(Build.SourcesDirectory)
-    npm run build || echo "No build step"
+    npm run build || echo "⚠️ No build step found"
   displayName: '🏗️ Build the app (optional)'
 
-# 4️⃣ Start app with PM2 from working directory
+# 4️⃣ Sync code to fixed folder and run with PM2
 - script: |
-    echo "🚀 Starting app with PM2..."
+    echo "🔁 Syncing code to $(deployPath)..."
+    sudo rm -rf $(deployPath)
+    sudo mkdir -p $(deployPath)
+    sudo cp -r $(Build.SourcesDirectory)/* $(deployPath)
 
+    echo "🚀 Installing PM2 and starting the app..."
+    cd $(deployPath)
+
+    npm install
     sudo npm install -g pm2
-
-    cd $(Build.SourcesDirectory)
 
     pm2 delete $(appName) || true
     pm2 start index.js --name $(appName) --watch
